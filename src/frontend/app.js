@@ -1,5 +1,6 @@
 // Connection
-const ws = new WebSocket(`ws://${window.location.host}/ws`);
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 const feedList = document.getElementById('feed-list');
 const agentLog = document.getElementById('agent-log');
 
