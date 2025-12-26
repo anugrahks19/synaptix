@@ -144,14 +144,15 @@ def run_simulation():
     current_onset = 0
     
     # FORCE STABLE ON STARTUP
-    with open("d:/GITHUB/synaptix/data/sim_config.json", "w") as f:
+    config_path = os.path.join(BASE_DIR, "data", "sim_config.json")
+    with open(config_path, "w") as f:
         json.dump({"mode": "STABLE", "onset": 0, "rules": {"max_bpm": 140, "max_drawdown": 10, "max_latency": 2000}}, f)
     print(colored("--- SYSTEM RESET: STABLE MODE ---", "cyan"))
 
     while True:
         # Read Config
         try:
-            with open("d:/GITHUB/synaptix/data/sim_config.json", "r") as f:
+            with open(config_path, "r") as f:
                 config = json.load(f)
                 is_chaos = config.get("mode") == "CHAOS"
                 onset = config.get("onset", 0)
