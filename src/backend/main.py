@@ -164,11 +164,11 @@ async def stabilize_system():
 
 @app.get("/")
 async def read_root():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+    return FileResponse(os.path.join(os.getcwd(), "src", "frontend", "index.html"))
 
 @app.get("/dashboard")
 async def read_dashboard():
-    return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
+    return FileResponse(os.path.join(os.getcwd(), "src", "frontend", "dashboard.html"))
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -190,10 +190,12 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # Background Task to stream data from the generated files to the UI
 async def stream_live_data():
+    base_dir = os.getcwd()
+    data_dir = os.path.join(base_dir, "data", "live_feed")
     files = {
-        "finance": "d:/GITHUB/synaptix/data/live_feed/finance.jsonl",
-        "healthcare": "d:/GITHUB/synaptix/data/live_feed/healthcare.jsonl",
-        "dev": "d:/GITHUB/synaptix/data/live_feed/developer.jsonl"
+        "finance": os.path.join(data_dir, "finance.jsonl"),
+        "healthcare": os.path.join(data_dir, "healthcare.jsonl"),
+        "dev": os.path.join(data_dir, "developer.jsonl")
     }
     file_pointers = {k: 0 for k in files}
 
@@ -226,10 +228,12 @@ async def stream_live_data():
 
 # Agent Watchdog: The "Agentic" part that fixes problems
 async def agent_watchdog():
+    base_dir = os.getcwd()
+    data_dir = os.path.join(base_dir, "data", "live_feed")
     files = {
-        "finance": "d:/GITHUB/synaptix/data/live_feed/finance.jsonl",
-        "healthcare": "d:/GITHUB/synaptix/data/live_feed/healthcare.jsonl",
-        "dev": "d:/GITHUB/synaptix/data/live_feed/developer.jsonl"
+        "finance": os.path.join(data_dir, "finance.jsonl"),
+        "healthcare": os.path.join(data_dir, "healthcare.jsonl"),
+        "dev": os.path.join(data_dir, "developer.jsonl")
     }
     # We use independent file pointers to track what the Agent has "seen"
     agent_pointers = {k: 0 for k in files}
