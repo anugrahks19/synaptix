@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptix | Frontier Agentic Platform</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <style>
+        body {
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .hero-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* Full screen hero */
+            text-align: center;
+            padding: 140px 20px 60px;
+            /* Increased top padding to 140px to clear navbar */
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 255, 163, 0.05) 0%, transparent 50%);
+            box-sizing: border-box;
+        }
+
+        .hero-title {
+            font-size: 5rem;
+            /* Massive title */
+            line-height: 1.1;
+            margin-bottom: 40px;
+            /* More space below title */
+            background: linear-gradient(135deg, #fff 0%, #a0a0b0 40%, #ffffff 50%, #a0a0b0 60%, #fff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 80px rgba(0, 255, 163, 0.2);
+            font-weight: 800;
+            animation: shimmer 5s linear infinite;
+        }
+
+        @keyframes shimmer {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 40px auto;
+            /* Centered horizontally, 40px bottom spacing */
+            font-weight: 300;
+        }
+
+        .cta-button {
+            background: var(--accent-color);
+            color: black;
+            font-family: var(--font-heading);
+            font-weight: 800;
+            font-size: 1.1rem;
+            padding: 18px 45px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 50px var(--accent-glow);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 20px;
+            /* Lowered position (was 40px) */
+            animation: bounce 2s infinite;
+            opacity: 0.5;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(10px);
+            }
+
+            /* Bounce downwards */
+            60% {
+                transform: translateY(5px);
+            }
+        }
+
+        /* Animations */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body class="theme-finance">
+
+    <!-- Navbar -->
+    <nav
+        style="position: fixed; top: 0; width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(5,5,16,0.8); backdrop-filter: blur(10px);">
+        <div class="logo">SYNAPTIX <span>.AI</span></div>
+        <div>
+            <a href="#about"
+                style="color: var(--text-secondary); text-decoration: none; margin-right: 30px; font-weight: 600;">About</a>
+            <a href="#tech"
+                style="color: var(--text-secondary); text-decoration: none; margin-right: 30px; font-weight: 600;">Technology</a>
+            <a href="/dashboard"
+                style="color: black; background: white; text-decoration: none; font-family: var(--font-heading); font-weight: 700; font-size: 14px; padding: 10px 25px; border-radius: 30px; display: inline-block;">
+                Launch App
+            </a>
+        </div>
+    </nav>
+
+    <!-- SECTION 1: HERO -->
+    <section class="hero-wrapper">
+        <div
+            style="font-family: var(--font-mono); color: var(--accent-color); margin-bottom: 20px; letter-spacing: 3px; font-size: 0.9rem; border: 1px solid var(--accent-color); padding: 5px 15px; border-radius: 20px;">
+            v1.0.0 STABLE
+        </div>
+        <h1 class="hero-title">RESILIENCE<br>REIMAGINED</h1>
+        <p class="hero-subtitle">
+            The first autonomous infrastructure platform that doesn't just watch your system crumble—it catches it.
+            Powered by Pathway and LangGraph.
+        </p>
+        <div style="display: flex; gap: 20px;">
+            <a href="/dashboard" class="cta-button">
+                LAUNCH DASHBOARD
+            </a>
+            <a href="#about"
+                style="padding: 18px 45px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50px; color: white; text-decoration: none; font-weight: 600; transition: all 0.3s;"
+                onmouseover="this.style.borderColor='white'"
+                onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">
+                LEARN MORE
+            </a>
+        </div>
+
+        <div class="scroll-indicator" onclick="window.scrollTo({top: window.innerHeight, behavior: 'smooth'})">
+            <span style="font-size: 24px;">↓</span>
+        </div>
+    </section>
+
+    <!-- SECTION 2: THE PROBLEM (Challenge) -->
+    <section id="about" class="section-padding"
+        style="background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.02) 100%);">
+        <h2 class="section-title">Why Synaptix?</h2>
+        <p class="section-subtitle">Digital fragility is the silent killer of modern enterprise. Milliseconds of
+            downtime cost millions in capital and trust.</p>
+
+        <div class="feature-row">
+            <div class="feature-text">
+                <h3 style="font-size: 2rem; margin-bottom: 20px;">The "Flatline" Problem</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+                    Traditional monitoring tools are passive. They scream "Fire!" but don't hold a hose. By the time an
+                    engineer wakes up to a PagerDuty alert, the stock market has crashed or the patient has
+                    destabilized.
+                </p>
+                <div style="border-left: 3px solid #ff0055; padding-left: 20px; color: #ff0055; font-weight: bold;">
+                    Legacy systems: 5-15 minute Response Time
+                </div>
+            </div>
+            <div class="feature-visual" style="border-color: #ff0055;">
+                <div style="font-family: var(--font-mono); color: #ff0055; font-size: 0.9rem;">
+                    > ALERT: SYSTEM FAILURE<br>
+                    > PAGING ON-CALL...<br>
+                    > WAITING FOR HUMAN...<br>
+                    > ...<br>
+                    > ...<br>
+                    > SYSTEM CRITIAL.
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-row">
+            <div class="feature-text">
+                <h3 style="font-size: 2rem; margin-bottom: 20px;">The Synaptix Fix</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+                    Synaptix inverts this model. It uses <strong>polymorphic agents</strong> that understand the context
+                    of the failure and execute pre-validated recovery protocols instantly.
+                </p>
+                <div
+                    style="border-left: 3px solid var(--accent-color); padding-left: 20px; color: var(--accent-color); font-weight: bold;">
+                    Synaptix: < 50ms Response Time </div>
+                </div>
+                <div class="feature-visual" style="border-color: var(--accent-color);">
+                    <div style="font-family: var(--font-mono); color: var(--accent-color); font-size: 0.9rem;">
+                        > DETECTED: ANOMALY<br>
+                        > ANALYZING CONTEXT...<br>
+                        > AGENT: RESTARTING SERVICE<br>
+                        > VERIFYING FIX...<br>
+                        > SYSTEM STABLE.
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <!-- SECTION 3: HOW IT WORKS (Timeline) -->
+    <section class="section-padding">
+        <h2 class="section-title">Autonomous Workflow</h2>
+        <div class="steps-container">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <h3>Ingest & Vectorize</h3>
+                <p style="color: var(--text-secondary); margin-top: 10px;">
+                    High-velocity streams (Finance ticks, ICU vitals, Server logs) are ingested via
+                    <strong>Pathway</strong>. Unstructured text is instantly vectorized for semantic understanding.
+                </p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">02</div>
+                <h3>Detect & Reason</h3>
+                <p style="color: var(--text-secondary); margin-top: 10px;">
+                    <strong>LangGraph</strong> agents monitor the stream. Unlike static rules, they use LLM reasoning to
+                    determine if a spike is a harmless glitch or a catastrophic failure.
+                </p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">03</div>
+                <h3>Execute & Heal</h3>
+                <p style="color: var(--text-secondary); margin-top: 10px;">
+                    The Agent executes a deterministic fix (e.g., injecting liquidity, restarting a pod, alerting a
+                    nurse) and verifies the system returns to homeostasis.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: UNDER THE HOOD (Technology) -->
+    <section id="tech" class="section-padding" style="background: var(--glass-bg);">
+        <h2 class="section-title">Built on Giants</h2>
+        <p class="section-subtitle">We leverage the fastest data processing engine combined with state-of-the-art
+            agentic orchestration.</p>
+
+        <div class="tech-stack-grid">
+            <div class="tech-item">
+                <span class="tech-icon">🦀</span>
+                <h3>Pathway</h3>
+                <p style="font-size: 0.9rem; color: #888;">The Rust-based engine handling data streams with low-latency
+                    and high-throughput.</p>
+            </div>
+            <div class="tech-item">
+                <span class="tech-icon">🦜</span>
+                <h3>LangGraph</h3>
+                <p style="font-size: 0.9rem; color: #888;">Orchestrates stateful, multi-actor agents with cyclic graph
+                    capabilities for complex reasoning.</p>
+            </div>
+            <div class="tech-item">
+                <span class="tech-icon">⚡</span>
+                <h3>FastAPI</h3>
+                <p style="font-size: 0.9rem; color: #888;">Asynchronous Python backend serving real-time WebSocket
+                    updates to the frontend.</p>
+            </div>
+            <div class="tech-item">
+                <span class="tech-icon">🎨</span>
+                <h3>Vanilla JS + CSS</h3>
+                <p style="font-size: 0.9rem; color: #888;">Zero-dependency, high-performance frontend with glassmorphism
+                    aesthetics.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: CTA / FOOTER -->
+    <section class="section-padding" style="text-align: center; margin-bottom: 50px;">
+        <h2 class="hero-title" style="font-size: 3rem;">Ready to Stabilize?</h2>
+        <p class="hero-subtitle" style="margin-bottom: 40px;">Join the future of autonomous DevOps and financial
+            resilience.</p>
+        <a href="/dashboard" class="cta-button" style="padding: 25px 60px; font-size: 1.5rem;">
+            LAUNCH PLATFORM
+        </a>
+    </section>
+
+    <footer
+        style="border-top: 1px solid var(--glass-border); padding: 50px 20px; text-align: center; color: var(--text-secondary);">
+        <div class="logo" style="margin-bottom: 20px;">SYNAPTIX <span>.AI</span></div>
+        <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 30px;">
+            <a href="#" style="color: white; text-decoration: none;">Documentation</a>
+            <a href="#" style="color: white; text-decoration: none;">GitHub</a>
+            <a href="#" style="color: white; text-decoration: none;">Team</a>
+        </div>
+        <p>&copy; 2024 Synaptix AI. Created for the Frontier Agentic AI Hackathon.</p>
+    </footer>
+
+    <!-- Canvas Background -->
+    <canvas id="neural-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 1;"></canvas>
+
+    <script>
+        // --- 1. Interactive Digital Synapse (Brighter & Interactive) ---
+        const canvas = document.getElementById('neural-bg');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 200 }; // Interaction radius
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5; // Faster movement
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.size = Math.random() * 3 + 1; // Visible size
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off edges
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Mouse interaction
+                if (mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouse.radius) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouse.radius - distance) / mouse.radius;
+                        const directionX = forceDirectionX * force * this.density;
+                        const directionY = forceDirectionY * force * this.density;
+                        this.x -= directionX; // Repulse
+                        this.y -= directionY;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = '#00ffa3'; // Bright Cyan/Green
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let numberOfParticles = (width * height) / 25000; // Reduced density
+            for (let i = 0; i < numberOfParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+
+        // --- 2. Scroll Animations ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    const children = entry.target.querySelectorAll('.stagger-item');
+                    children.forEach((child, i) => {
+                        setTimeout(() => child.classList.add('visible'), i * 150);
+                    });
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section-title, .section-subtitle, .feature-row, .tech-stack-grid, .steps-container').forEach(el => {
+            el.classList.add('fade-in-up');
+            observer.observe(el);
+        });
+
+        // --- 3. 3D Tilt Effect ---
+        const tiltElements = document.querySelectorAll('.step-card, .tech-item');
+
+        tiltElements.forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Calculate rotation (max 10 degrees)
+                const xRot = -((y - rect.height / 2) / rect.height) * 10;
+                const yRot = ((x - rect.width / 2) / rect.width) * 10;
+
+                el.style.transform = `perspective(1000px) rotateX(${xRot}deg) rotateY(${yRot}deg) scale(1.05)`;
+                el.style.transition = 'transform 0.1s';
+            });
+
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+                el.style.transition = 'transform 0.5s ease';
+            });
+        });
+
+        // --- 4. Terminal Typing Animation ---
+        const terminalTexts = document.querySelectorAll('.feature-visual div');
+
+        // Save original text and clear it
+        const originalTexts = [];
+        terminalTexts.forEach(el => {
+            originalTexts.push(el.innerHTML);
+            el.innerHTML = ''; // Start empty
+            el.style.minHeight = '150px'; // Prevent layout shift
+        });
+
+        const typeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const index = Array.from(terminalTexts).indexOf(el);
+
+                    // Only type if not already typed
+                    if (!el.hasAttribute('data-typed')) {
+                        el.setAttribute('data-typed', 'true');
+                        typeText(el, originalTexts[index]);
+                    }
+                }
+            });
+        }, { threshold: 0.5 });
+
+        terminalTexts.forEach(el => typeObserver.observe(el));
+
+        function typeText(element, htmlContent) {
+            // We need to parse HTML tags manually to not break them
+            // Simple approach: replace <br> with newlines for processing, or just process text logic
+            // Robust Approach: processing chars, if '<' find '>' and print whole tag immediately
+
+            let i = 0;
+            const speed = 20; // ms per char
+
+            function type() {
+                if (i < htmlContent.length) {
+                    let char = htmlContent.charAt(i);
+
+                    if (char === '<') {
+                        // Skip ahead to end of tag
+                        let tagEnd = htmlContent.indexOf('>', i);
+                        element.innerHTML += htmlContent.substring(i, tagEnd + 1);
+                        i = tagEnd + 1;
+                    } else {
+                        element.innerHTML += char;
+                        i++;
+                    }
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+    </script>
+</body>
+
+</html>
