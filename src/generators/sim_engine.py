@@ -50,10 +50,22 @@ def generate_finance(force_critical=False, is_chaos=False):
         rule_break = change < 0 and droppct > RULES["max_drawdown"]
 
         if force_critical or rule_break:
-            symbol = "CRASH" if force_critical else symbol
-            change = -round(random.uniform(20, 50), 2) # Crash
-            event = "MARKET ANOMALY DETECTED"
-            sentiment = "bearish"
+            # Variety of Financial Crises
+            crises = [
+                ("CRASH", "Market Halted: Algorithms Cascading", "bearish"),
+                ("LIQUIDITY", "Flash Crash: 0-Day Liquidity Dried Up", "bearish"),
+                ("REG-HALT", "SEC Probe: Trading Suspended indefinitely", "neutral"),
+                ("FOREX", "Currency Devaluation: Hyperinflation Alert", "bearish"),
+                ("CRYPTO", "Exchange Hack: 50k BTC Stolen", "bearish"),
+                ("LATENCY", "Arbitrage Attack: Latency Spike Detected", "bearish"),
+                ("DARK-POOL", "Dark Pool Leak: Insider Trading Suspected", "bearish"),
+                ("QUANTUM", "Quantum Decryption Risk: Keys Compromised", "bearish")
+            ]
+            c_sym, c_news, c_sent = random.choice(crises)
+            symbol = c_sym
+            change = -round(random.uniform(20, 50), 2)
+            event = c_news
+            sentiment = c_sent
     
     return {
         "timestamp": datetime.now().isoformat(),
@@ -82,9 +94,22 @@ def generate_health(force_critical=False, is_chaos=False):
 
         if force_critical:
             status = "CRITICAL"
-            bpm = 0 if random.random() > 0.5 else 180
-            notes = "CARDIAC EVENT"
-            spo2 = 70
+            # Randomize Medical Emergencies
+            emergencies = [
+                ("V-FIB", "Ventricular Fibrillation - Code Blue", 0, 60),
+                ("SEPSIS", "Septic Shock - BP Critical", 145, 88),
+                ("ANAPHYLAXIS", "Allergic Reaction - Airway Closing", 160, 85),
+                ("STROKE", "CVA Detected - Left Side Paralysis", 90, 92),
+                ("HEMORRHAGE", "Internal Bleeding - Hypovolemic Shock", 170, 80),
+                ("PACEMAKER", "Pacemaker Malfunction - Signal Lost", 40, 90),
+                ("ROBOTICS", "Remote Surgery Latency - Connection Unstable", 100, 98),
+                ("AI-ERROR", "AI Misdiagnosis Alert - Override Required", 80, 99)
+            ]
+            e_code, e_note, e_bpm, e_spo2 = random.choice(emergencies)
+            
+            bpm = e_bpm if e_bpm != 0 else 0
+            notes = e_note
+            spo2 = e_spo2
         elif rule_break:
             status = "CRITICAL"
             notes = f"Rule Breach: BPM {bpm} > {RULES['max_bpm']}"
@@ -112,7 +137,20 @@ def generate_dev(force_critical=False, is_chaos=False):
 
         if force_critical:
             level = "FATAL"
-            msg = "SYSTEM OUTAGE"
+            # Randomized Tech Disasters
+            disasters = [
+                ("DB-MASTER", "Database Corruption: WAL Log Mismatch"),
+                ("K8S-CLUSTER", "CrashLoopBackOff: Control Plane Down"),
+                ("SECURITY", "DDoS Detected: 50M RPS /packet-flood"),
+                ("PAYMENTS", "Double Spending Detected: Race Condition"),
+                ("STORAGE", "S3 Bucket Deleted: Production Assets Missing"),
+                ("RANSOMWARE", "Ransomware Encrypting Pods - Immediate Isolation"),
+                ("LEAK", "API Key Leak in Public Repo - Revocation Needed"),
+                ("LAMBDA", "Recursive Lambda Bomb - Cost Spike")
+            ]
+            c_svc, c_msg = random.choice(disasters)
+            service = c_svc
+            msg = c_msg
             action = True
         elif rule_break:
             level = "ERROR"
@@ -197,8 +235,8 @@ def run_simulation():
             else:
                 if current_time >= next_chaos_time:
                     should_trigger_critical = True
-                    # Schedule next random interval
-                    delay = random.uniform(2, 15)
+                    # Schedule next random interval (max 20s as requested)
+                    delay = random.uniform(2, 20)
                     next_chaos_time = current_time + delay
                     print(colored(f"--- NEXT CRASH IN {delay:.1f}s ---", "yellow"), flush=True)
         
@@ -229,8 +267,8 @@ def run_simulation():
         if should_trigger_critical:
             events_triggered += 1
 
-        # Faster Tick Rate
-        time.sleep(random.uniform(0.1, 0.8))
+        # Slower Tick Rate to Prevent API Flood
+        time.sleep(random.uniform(1.5, 3.0))
         domain_cycle += 1
 
 if __name__ == "__main__":

@@ -69,8 +69,26 @@ function processPacket(data) {
 
     // Check for Critical/Anomalies
     let isCritical = false;
-    if (data.status === 'CRITICAL' || data.level === 'ERROR' || data.level === 'FATAL' ||
-        data.symbol === 'CRASH' || data.symbol === 'CIRCUIT-BREAKER') {
+
+    // Universal Critical Check
+    if (data.status === 'CRITICAL' || data.level === 'ERROR' || data.level === 'FATAL' || data.is_manual) isCritical = true;
+
+    // Finance specific thresholds
+    if (data.domain === 'finance') {
+        if (data.symbol === 'CRASH' || data.symbol === 'CIRCUIT-BREAKER' || data.symbol === 'QUANTUM' || data.symbol === 'FLASH-CRASH' ||
+            parseFloat(data.delta) <= -10.0 || (data.news && data.news.includes("CRASH")) || (data.news && data.news.includes("Halt"))) {
+            isCritical = true;
+        }
+    }
+
+    // Health specific thresholds
+    if (data.domain === 'healthcare') {
+        if (data.bpm > 140 || data.bpm < 40 || data.spo2 < 90 || (data.notes && data.notes.includes("CODE BLUE"))) {
+            isCritical = true;
+        }
+    }
+
+    if (isCritical) {
         isCritical = true;
         stats.anomalies++;
         document.getElementById('stat-3-value').innerText = stats.anomalies;
@@ -173,11 +191,72 @@ function triggerAgent(data) {
     });
 }
 
+// TTS Synthesis
+// TTS Synthesis Queue
+// TTS Synthesis Queue
+const synth = window.speechSynthesis;
+const audioQueue = [];
+let isSpeaking = false;
+
+function processAudioQueue() {
+    if (isSpeaking || audioQueue.length === 0) return;
+
+    isSpeaking = true;
+    const rawText = audioQueue.shift();
+    // Clean text: Remove Emojis and Symbols for clearer speech
+    const text = rawText.replace(/[⚠✔>]/g, '').trim();
+
+    try {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+
+        // CRITICAL FIX: Attach to window to prevent Garbage Collection from killing onend
+        window.currentUtterance = utter;
+
+        // Try to find a robotic/Google voice
+        const voices = synth.getVoices();
+        const robotVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Zira'));
+        if (robotVoice) utter.voice = robotVoice;
+
+        utter.onend = () => {
+            isSpeaking = false;
+            processAudioQueue(); // Play next
+        };
+
+        utter.onerror = (e) => {
+            console.error("TTS Error:", e);
+            isSpeaking = false;
+            processAudioQueue(); // Skip broken
+        };
+
+        synth.speak(utter);
+    } catch (e) {
+        console.warn("TTS Failed", e);
+        isSpeaking = false;
+        processAudioQueue();
+    }
+}
+
 function logAgent(text) {
     const entry = document.createElement('div');
     entry.className = 'log-entry latest';
     entry.innerText = `> ${text}`;
     agentLog.prepend(entry);
+
+    // Cyberpunk Voice Effect
+    // Queue relevant messages
+    const voiceKeywords = [
+        "action", "alert", "critical", "auto-protocol", "threat",
+        "code", "blue", "failure", "crash", "error", "root", "cause", "diagnosed",
+        "market", "plunge", "system", "fatal"
+    ];
+
+    const lowerText = text.toLowerCase();
+    if (voiceKeywords.some(k => lowerText.includes(k))) {
+        audioQueue.push(text);
+        processAudioQueue();
+    }
 }
 
 // UI Switching
@@ -200,7 +279,17 @@ window.switchTheme = (domain) => {
     // Clear Feed
     feedList.innerHTML = '';
     stats.count = 0;
-    stats.anomalies = 0;
+
+    // Restore persistent stats
+    let savedAnoms = 0;
+    if (domain === 'finance') savedAnoms = domainStats['finance'];
+    else if (domain === 'health') savedAnoms = domainStats['healthcare'];
+    else savedAnoms = domainStats['dev'];
+
+    stats.anomalies = savedAnoms; // Sync local var
+    document.getElementById('stat-3-value').innerText = savedAnoms;
+
+
 
     // Polymorphic Rule UI
     const rTitle = document.getElementById('rule-title');
@@ -220,9 +309,12 @@ window.switchTheme = (domain) => {
 window.triggerCrisis = async () => {
     // Visual Feedback
     const btn = document.querySelector('.critical-btn');
-    const originalText = btn.innerText;
+    if (btn.disabled) return; // Prevent double clicks
+
+    btn.disabled = true;
     btn.innerText = "INJECTING FAULT...";
     btn.style.opacity = 0.7;
+    btn.style.cursor = "not-allowed";
 
     try {
         const response = await fetch('/trigger-event', {
@@ -235,16 +327,15 @@ window.triggerCrisis = async () => {
 
     } catch (e) {
         console.error("Trigger failed", e);
-        btn.innerText = "ERROR - RESTART BACKEND";
-        btn.style.color = "white";
-        btn.style.background = "red";
         alert("⚠️ Connection Failed!\n\nPlease RESTART backend: python src/backend/main.py");
+    } finally {
+        setTimeout(() => {
+            btn.innerText = "⚠️ TRIGGER CRISIS"; // Hardcode safe text
+            btn.style.opacity = 1;
+            btn.disabled = false;
+            btn.style.cursor = "pointer";
+        }, 1000);
     }
-
-    setTimeout(() => {
-        btn.innerText = originalText;
-        btn.style.opacity = 1;
-    }, 1000);
 };
 
 // Update Rules (Polymorphic)

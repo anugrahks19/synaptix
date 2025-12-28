@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Synaptix | Forensics Lab</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Force layout */
+        .app-container {
+            display: grid !important;
+            grid-template-columns: 250px 1fr !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            grid-template-rows: 1fr !important;
+        }
+
+        .sidebar {
+            grid-row: 1 / -1;
+            background: rgba(5, 5, 16, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .main-content {
+            grid-column: 2;
+            padding: 20px;
+            overflow: hidden;
+            background: #050510;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo">SYNAPTIX <span>.AI</span></div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="/dashboard" class="nav-item">
+                    <span>📊</span> Dashboard
+                </a>
+                <a href="/network" class="nav-item">
+                    <span>🕸️</span> Cortex Map
+                </a>
+                <div class="nav-item active">
+                    <span style="color: var(--accent-color)">🔍</span> Forensics
+                </div>
+            </nav>
+
+            <div style="margin-top: auto;">
+                <button class="critical-btn" onclick="triggerCrisis()">
+                    ⚠️ TRIGGER CRISIS
+                </button>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 10px; color: #666; text-align: center;">
+                POWERED BY<br><strong style="color:white">PATHWAY</strong>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 24px;">FORENSICS LAB</h1>
+                <p style="color: #666; margin: 0;">Explainable AI Audit Trail</p>
+            </header>
+
+            <div class="glass-panel"
+                style="display: flex; height: calc(100vh - 120px); gap: 20px; padding: 0; background: transparent; border: none; box-shadow: none;">
+                <!-- LEFT: RAW INPUT -->
+                <div
+                    style="flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 20px;">
+                    <h3
+                        style="color: var(--text-secondary); margin-bottom: 15px; font-size: 12px; letter-spacing: 1px;">
+                        > RAW INPUT STREAM</h3>
+                    <div id="input-log"
+                        style="flex: 1; overflow-y: auto; font-family: 'JetBrains Mono'; font-size: 11px; color: #00ffa3;">
+                    </div>
+                </div>
+
+                <!-- RIGHT: AI REASONING -->
+                <div
+                    style="flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 20px;">
+                    <h3
+                        style="color: var(--text-secondary); margin-bottom: 15px; font-size: 12px; letter-spacing: 1px;">
+                        > AGENT CHAIN-OF-THOUGHT</h3>
+                    <div id="reasoning-log"
+                        style="flex: 1; overflow-y: auto; font-family: 'JetBrains Mono'; font-size: 11px;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        const inputLog = document.getElementById('input-log');
+        const reasoningLog = document.getElementById('reasoning-log');
+
+        let triggerIndex = 0;
+        const DOMAINS = ['finance', 'healthcare', 'dev'];
+
+        async function triggerCrisis() {
+            const btn = document.querySelector('.critical-btn');
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            btn.innerText = "INJECTING...";
+            btn.style.opacity = 0.7;
+
+            // Sequential Round-Robin Logic
+            const targetDomain = DOMAINS[triggerIndex % DOMAINS.length];
+            triggerIndex++;
+
+            try {
+                await fetch('/trigger-event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: targetDomain })
+                });
+            } catch (e) { }
+
+            setTimeout(() => {
+                btn.innerText = "⚠️ TRIGGER CRISIS";
+                btn.style.opacity = 1;
+                btn.disabled = false;
+            }, 1000);
+        }
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type !== 'data_update') return;
+
+            const data = msg.data;
+            const time = new Date().toISOString().split('T')[1].replace('Z', '');
+
+            // 1. Log Input
+            const inputEntry = document.createElement('div');
+            inputEntry.style.marginBottom = "8px";
+            inputEntry.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            inputEntry.style.paddingBottom = "5px";
+            inputEntry.innerHTML = `
+                <span style="opacity:0.5">[${time}]</span> <span style="color:white">INGESTED</span><br>
+                ${JSON.stringify(data)}
+            `;
+            inputLog.prepend(inputEntry);
+
+            // 2. Log Reasoning
+            const reasonEntry = document.createElement('div');
+            reasonEntry.style.marginBottom = "15px";
+            reasonEntry.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            reasonEntry.style.paddingBottom = "10px";
+
+            let color = "#888";
+            let reasonText = "";
+
+            if (data.status === 'CRITICAL' || data.is_manual || data.level === 'FATAL') {
+                reasonText = `
+                    <div style="color: #fff">> ANOMALY DETECTED: ${data.domain.toUpperCase()}</div>
+                    <div style="color: var(--accent-color)">> ANALYSIS: MATCHED THREAT PATTERN</div>
+                    <div style="color: #ff0055; font-weight: bold;">> ACTION: EXECUTING DEFENSE PROTOCOL</div>
+                `;
+            } else {
+                reasonText = `
+                    <div style="color: #666">> STATUS: NOMINAL</div>
+                    <div style="color: #666">> ACTION: IGNORE</div>
+                `;
+            }
+
+            reasonEntry.innerHTML = `
+                <span style="opacity:0.5">[${time}]</span>
+                ${reasonText}
+            `;
+            reasoningLog.prepend(reasonEntry);
+        };
+    </script>
+</body>
+
+</html>

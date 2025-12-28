@@ -66,16 +66,36 @@ async def update_rules(req: UpdateRulesRequest):
     
     return {"status": "updated", "config": config["rules"]}
 
+@app.get("/dashboard")
+async def get_dashboard():
+    return FileResponse(os.path.join(os.getcwd(), "src", "frontend", "dashboard.html"))
+
+@app.get("/network")
+async def get_network():
+    return FileResponse(os.path.join(os.getcwd(), "src", "frontend", "network.html"))
+
+@app.get("/forensics")
+async def get_forensics():
+    return FileResponse(os.path.join(os.getcwd(), "src", "frontend", "forensics.html"))
+
 @app.post("/trigger-event")
 async def trigger_event(req: TriggerRequest):
+    # Normalize domain names (Handle case sensitivity and aliases)
+    d = req.domain.lower()
+    if d == "health" or d == "healthcare": req.domain = "healthcare"
+    elif d == "finance": req.domain = "finance"
+    elif d == "dev" or "dev" in d: req.domain = "dev" # Handles 'DevTools', 'developer', etc.
+    
     base_dir = os.getcwd()
     config_path = os.path.join(base_dir, "data", "sim_config.json")
     
-    # 1. Enable Chaos in Sim Engine
+    # 1. DO NOT ENABLE CHAOS LOOP
+    # User requested: "dont makeit inject automatically only inject crisis when user taps the button"
+    # So we just write the ONE event to the file, but keep config STABLE
     with open(config_path, "w") as f:
         json.dump({
-            "mode": "CHAOS", 
-            "onset": datetime.now().timestamp() # Track when chaos started
+            "mode": "STABLE", 
+            "onset": 0
         }, f)
 
     timestamp = datetime.now().isoformat()
@@ -94,7 +114,12 @@ async def trigger_event(req: TriggerRequest):
         scenarios = [
             {"symbol": "CRASH", "price": 0.00, "delta": -99.99, "news": "MARKET CRASH DETECTED"},
             {"symbol": "BTC-DUMP", "price": 12000.00, "delta": -40.00, "news": "Flash Sale on Crypto"},
-            {"symbol": "YOLO-SHORT", "price": 4.20, "delta": -69.00, "news": "Hedge Fund Liquidation"}
+            {"symbol": "YOLO-SHORT", "price": 4.20, "delta": -69.00, "news": "Hedge Fund Liquidation"},
+            {"symbol": "FLASH-CRASH", "price": 1400.00, "delta": -35.00, "news": "High Frequency Trading Loop Detected"},
+            {"symbol": "SEC-FREEZE", "price": 0.00, "delta": 0.00, "news": "Regulatory Trading Halt - Investigation Pending"},
+            {"symbol": "FX-COLLAPSE", "price": 0.85, "delta": -15.00, "news": "Currency Peg Broken - Hyperinflation Risk"},
+            {"symbol": "DARK-POOL", "price": 450.20, "delta": -12.00, "news": "Suspicious Dark Pool Activity Detected"},
+            {"symbol": "QUANTUM", "price": 0.00, "delta": -100.00, "news": "Encryption Keys Compromised by Quantum Actor"}
         ]
         scen = random.choice(scenarios)
         payload = {
@@ -106,7 +131,12 @@ async def trigger_event(req: TriggerRequest):
         scenarios = [
             {"pid": "EMERGENCY", "notes": "CARDIAC ARREST - CODE BLUE", "bpm": 0},
             {"pid": "ICU-04", "notes": "SPO2 FAILURE - HYPOXIA", "bpm": 45},
-            {"pid": "TRAUMA-1", "notes": "HEMORRHAGE ALERT", "bpm": 160}
+            {"pid": "TRAUMA-1", "notes": "HEMORRHAGE ALERT", "bpm": 160},
+            {"pid": "NEURO", "notes": "Seizure Activity Detected - Status Epilepticus", "bpm": 140},
+            {"pid": "ALLERGY", "notes": "Anaphylaxis - Airway Compromised", "bpm": 155},
+            {"pid": "SEPSIS", "notes": "Septic Shock - BP Critical", "bpm": 135},
+            {"pid": "DEVICE", "notes": "Pacemaker Signal Loss - Lead Failure", "bpm": 30},
+            {"pid": "ROBOT", "notes": "Surgical Robot Latency > 500ms - Safety Stop", "bpm": 90}
         ]
         scen = random.choice(scenarios)
         payload = {
@@ -118,7 +148,12 @@ async def trigger_event(req: TriggerRequest):
         scenarios = [
             {"msg": "DATA CORRUPTION DETECTED - SYSTEM HALT", "svc": "CORE-DB"},
             {"msg": "MEMORY LEAK - OOM KILLER INVOKED", "svc": "WORKER-NODE-9"},
-            {"msg": "UNAUTHORIZED ROOT ACCESS ATTEMPT", "svc": "AUTH-GATEWAY"}
+            {"msg": "UNAUTHORIZED ROOT ACCESS ATTEMPT", "svc": "AUTH-GATEWAY"},
+            {"msg": "DDOS ATTACK - 1M RPS DETECTED", "svc": "LOAD-BALANCER"},
+            {"msg": "RANSOMWARE SIGNATURE FOUND - ENCRYPTING", "svc": "FILE-SERVER"},
+            {"msg": "API KEY LEAKED IN PUBLIC REPO", "svc": "GIT-WATCHDOG"},
+            {"msg": "DEADLOCK DETECTED - TRANSACTION STUCK", "svc": "PAYMENT-ENGINE"},
+            {"msg": "RECURSIVE LAMBDA BOMB - COST SPIKE", "svc": "SERVERLESS-FUNC"}
         ]
         scen = random.choice(scenarios)
         payload = {
@@ -129,9 +164,21 @@ async def trigger_event(req: TriggerRequest):
     else:
         return {"status": "error", "message": "Invalid domain"}
 
+    # 3. INSTANT FEEDBACK (Bypass File Reader Latency)
+    # Broadcast directly to UI so the user sees it immediately
+    payload["domain"] = req.domain
+    payload["is_manual"] = True # Tag for loop filtering
+    
     # Write to file (Pathway will pick this up instantly)
     with open(files[req.domain], "a") as f:
         f.write(json.dumps(payload) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+    await manager.broadcast(json.dumps({
+        "type": "data_update",
+        "data": payload
+    }))
 
     return {"status": "success", "payload": payload}
 
@@ -205,7 +252,7 @@ async def stream_live_data():
             if not os.path.exists(filepath):
                 continue
                 
-            with open(filepath, 'r') as f:
+            with open(filepath, 'r', encoding='utf-8') as f:
                 f.seek(file_pointers[domain])
                 new_lines = f.readlines()
                 file_pointers[domain] = f.tell()
@@ -215,6 +262,12 @@ async def stream_live_data():
                     for line in new_lines:
                         try:
                             payload = json.loads(line)
+                            
+                            # IDEMPOTENCY KEY: If this was a manual trigger (is_manual=True),
+                            # it was already broadcasted by the POST endpoint. Do not send again.
+                            if payload.get("is_manual"):
+                                continue
+                                
                             payload["domain"] = domain  # Tag with domain
                             # Send to frontend
                             await manager.broadcast(json.dumps({
@@ -226,121 +279,51 @@ async def stream_live_data():
         
         await asyncio.sleep(0.5)
 
-# Agent Watchdog: The "Agentic" part that fixes problems
-async def agent_watchdog():
+# Real-Time Agent Streamer (Reads output from Pathway AI)
+async def agent_stream_listener():
     base_dir = os.getcwd()
-    data_dir = os.path.join(base_dir, "data", "live_feed")
-    files = {
-        "finance": os.path.join(data_dir, "finance.jsonl"),
-        "healthcare": os.path.join(data_dir, "healthcare.jsonl"),
-        "dev": os.path.join(data_dir, "developer.jsonl")
-    }
-    # We use independent file pointers to track what the Agent has "seen"
-    agent_pointers = {k: 0 for k in files}
-
-    # Initialize pointers to end of file to avoid reacting to old logs
-    for domain, filepath in files.items():
-        if os.path.exists(filepath):
-            agent_pointers[domain] = os.path.getsize(filepath)
+    agent_file = os.path.join(base_dir, "data", "agent_stream.jsonl")
+    
+    # Ensure file exists
+    if not os.path.exists(agent_file):
+        with open(agent_file, "w") as f:
+            pass
+            
+    file_pointer = 0
+    
+    # Fast forward to end on startup to avoid re-playing old history
+    if os.path.exists(agent_file):
+        file_pointer = os.path.getsize(agent_file)
 
     while True:
-        for domain, filepath in files.items():
-            if not os.path.exists(filepath):
-                continue
-            
-            # Check for new lines
-            current_size = os.path.getsize(filepath)
-            if current_size > agent_pointers[domain]:
-                with open(filepath, 'r') as f:
-                    f.seek(agent_pointers[domain])
+        if os.path.exists(agent_file):
+            current_size = os.path.getsize(agent_file)
+            if current_size > file_pointer:
+                with open(agent_file, "r", encoding="utf-8") as f:
+                    f.seek(file_pointer)
                     new_lines = f.readlines()
-                    agent_pointers[domain] = f.tell()
-
+                    file_pointer = f.tell()
+                
                 for line in new_lines:
                     try:
                         record = json.loads(line)
-                        # Reactive Logic
-                        if domain == "dev" and record.get("level") == "FATAL":
-                            # Context Aware Fix
-                            asyncio.create_task(mitigate_dev_failure(filepath, record.get("service"), record.get("message")))
-                        
-                        elif domain == "healthcare" and record.get("status") == "CRITICAL":
-                            asyncio.create_task(mitigate_health_crisis(filepath, record.get("patient_id"), record.get("notes")))
-                            
-                        elif domain == "finance" and record.get("price") == 0.0:
-                            asyncio.create_task(mitigate_market_crash(filepath))
-
+                        # Broadcast to UI
+                        await manager.broadcast(json.dumps({
+                            "type": "agent_response",
+                            "content": record.get("ai_response", "Processing..."),
+                            "raw": record
+                        }))
                     except:
                         pass
         
-        await asyncio.sleep(1)
-
-async def mitigate_dev_failure(filepath, service, error_msg):
-    await asyncio.sleep(3) # Agent Analysis Time
-    timestamp = datetime.now().isoformat()
-    
-    # Specific Fixes for Specific Problems
-    fix_action = "Restarted Service"
-    if "Memory Leak" in error_msg: fix_action = "Garbage Collection Triggered & Memory Freed"
-    elif "Database" in error_msg: fix_action = "Rolled Back Transaction & Restored Consistency"
-    elif "Unauthorized" in error_msg: fix_action = "IP Blocked & Session Terminated"
-    elif "Deadlock" in error_msg: fix_action = "Concurrency Limits Adjusted"
-
-    recovery_payload = {
-        "timestamp": timestamp,
-        "type": "syslog",
-        "service": service,
-        "level": "INFO",
-        "message": f"SENTINEL AGENT: {fix_action}. Stability restored.",
-        "action_required": False
-    }
-    with open(filepath, "a") as f:
-        f.write(json.dumps(recovery_payload) + "\n")
-
-async def mitigate_health_crisis(filepath, patient_id, condition):
-    await asyncio.sleep(3)
-    timestamp = datetime.now().isoformat()
-    
-    # Specific Medical Interventions
-    treatment = "Administered Stabilization Protocol"
-    if "Cardiac" in condition: treatment = "Defibrillator Discharged - Sinus Rhythm Restored"
-    elif "Hypoxia" in condition: treatment = "Increased O2 Flow to 100% - Saturation Rising"
-    elif "Seizure" in condition: treatment = "Administered Diazepam - Seizure Ceased"
-    elif "Tachycardia" in condition: treatment = "Administered Beta Blockers - Heart Rate Normalized"
-
-    recovery_payload = {
-        "timestamp": timestamp,
-        "type": "vitals",
-        "patient_id": patient_id,
-        "bpm": 80,
-        "spo2": 98,
-        "status": "STABLE",
-        "notes": f"SENTINEL AGENT: {treatment}."
-    }
-    with open(filepath, "a") as f:
-        f.write(json.dumps(recovery_payload) + "\n")
-
-async def mitigate_market_crash(filepath):
-    await asyncio.sleep(3)
-    timestamp = datetime.now().isoformat()
-    recovery_payload = {
-        "timestamp": timestamp,
-        "type": "market_tick",
-        "symbol": "CIRCUIT-BREAKER",
-        "price": 1000.00,
-        "delta": 0.0,
-        "news": "SENTINEL AGENT: Trading Halted. Liquidity Injection Executed.",
-        "sentiment": "neutral"
-    }
-    with open(filepath, "a") as f:
-        f.write(json.dumps(recovery_payload) + "\n")
+        await asyncio.sleep(0.5)
 
 @app.on_event("startup")
 async def startup_event():
     # Start the background streamer
     asyncio.create_task(stream_live_data())
-    # Start the Agent Watchdog
-    asyncio.create_task(agent_watchdog())
+    # Start the Agent Listener (Pathway Output)
+    asyncio.create_task(agent_stream_listener())
 
 if __name__ == "__main__":
     import uvicorn

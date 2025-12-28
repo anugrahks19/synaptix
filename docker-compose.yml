@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # 1. The API Server (FastAPI + Frontend)
+  server:
+    build: .
+    command: python src/backend/main.py
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - pathway
+
+  # 2. The Unstoppable Engine (Pathway)
+  pathway:
+    build: .
+    command: python src/backend/pw_engine.py
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL}
+      - PYTHONUNBUFFERED=1
+    restart: always
+
+  # 3. The Heartbeat (Simulation)
+  simulation:
+    build: .
+    command: python src/generators/sim_engine.py
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always

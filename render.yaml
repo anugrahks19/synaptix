@@ -1,9 +1,13 @@
 services:
   - type: web
     name: synaptix-platform
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: ./start.sh
+    env: docker
+    plan: free
+    # Docker runtime doesn't use buildCommand/startCommand here (it uses the Dockerfile)
+    # But for some setups, we might want to be explicit. 
+    # Render's Docker runtime defaults to the ENTRYPOINT/CMD in Dockerfile.
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.0
+      - key: OPENROUTER_MODEL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false

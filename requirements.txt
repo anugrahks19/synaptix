@@ -3,3 +3,5 @@ uvicorn
 pathway
 termcolor
 websockets
+openai
+python-dotenv

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Synaptix | Cortex Map</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CRITICAL: Force Layout Reset */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Grid Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            /* Fixed Sidebar Width */
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Override */
+        .sidebar {
+            background: #050510;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 5;
+            height: 100vh;
+            /* Full Height */
+        }
+
+        /* Main Content - NOW FLEX COLUMN */
+        .main-content {
+            background: #000;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            /* Flexbox */
+            flex-direction: column;
+            /* Vertical Stack */
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Section: Visualization - BIGGER */
+        #viz-wrapper {
+            flex: 8;
+            /* Takes 80% of space */
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a0a1a 0%, #000 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        /* Floating UI for Graph */
+        .overlay-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 163, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Bottom Section: Logs - SMALLER */
+        #log-wrapper {
+            flex: 2;
+            /* Takes 20% of space */
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(5, 5, 10, 0.95);
+            position: relative;
+            min-height: 0;
+            /* Important for flex overflow */
+        }
+
+        /* HUD Bar - Fixed at top of log section */
+        .hud-bar {
+            height: 35px;
+            flex-shrink: 0;
+            /* Do not shrink */
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Scrollable Log Container */
+        .log-container {
+            flex: 1;
+            /* Fills remaining space in log-wrapper */
+            overflow-y: auto;
+            /* Scrollable */
+            padding: 10px 20px;
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.4;
+        }
+
+        /* Scrollbar custom */
+        .log-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+
+        /* Force Button Visibility - LIFTED UP */
+        .control-panel {
+            margin-top: auto;
+            margin-bottom: 40px;
+            /* Lift up */
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand" style="margin-bottom: 30px;">
+                <h2 style="color:white; margin:0;">SYNAPTIX <span style="color:#00ffa3">.AI</span></h2>
+            </div>
+
+            <nav class="nav-menu" style="display:flex; flex-direction:column; gap:10px;">
+                <a href="/dashboard" class="nav-item">📊 Dashboard</a>
+                <div class="nav-item active" style="color:#00ffa3; background:rgba(255,255,255,0.05);">🕸️ Cortex Map
+                </div>
+                <a href="/forensics" class="nav-item">🔍 Forensics</a>
+            </nav>
+
+            <div class="control-panel">
+                <button class="critical-btn" onclick="triggerCrisis()">
+                    ⚠️ TRIGGER CRISIS
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- SECTION 1: VISUALIZATION (Top) -->
+            <div id="viz-wrapper">
+                <canvas id="canvas"></canvas>
+
+                <div class="overlay-ui">
+                    <h1 style="margin: 0; font-size: 18px; color: #fff; font-family: 'Outfit', sans-serif;">LIVE CORTEX
+                        MAP</h1>
+                    <div id="status"
+                        style="margin-top: 5px; color: #00ffa3; font-weight: bold; font-family: 'JetBrains Mono'; font-size: 11px;">
+                        ● SYSTEM ONLINE
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: LOGS & HUD (Bottom) -->
+            <div id="log-wrapper">
+                <!-- HUD Header -->
+                <div class="hud-bar">
+                    <div style="display:flex; gap:15px;">
+                        <span>PROTOCOL: <span style="color:#00ffa3">WSS/TLSv1.3</span></span>
+                        <span>ENCRYPTION: <span style="color:#00ffa3">AES-256-GCM</span></span>
+                    </div>
+                    <div
+                        style="opacity:0.3; letter-spacing: 2px; display:none; @media(min-width: 1000px){display:block;}">
+                        0x4F 0x1A 0x9B...
+                    </div>
+                    <div style="display:flex; gap:15px;">
+                        <span>LATENCY: <span style="color:#fff">12ms</span></span>
+                        <!-- Using a span we can update -->
+                        <span>FPS: <span id="fps-counter" style="color:#fff">60</span></span>
+                    </div>
+                </div>
+
+                <!-- Scrolling Log -->
+                <div class="log-container" id="packet-log">
+                    <!-- Dynamic logs here -->
+                    <div style="opacity:0.5; margin-bottom: 5px;">[SYSTEM] Initializing stream...</div>
+                </div>
+            </div>
+
+            <div id="error-box"
+                style="display:none; position:absolute; bottom:20px; right:20px; color:red; bg:black; z-index:999;">
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function logError(msg) { console.error(msg); }
+
+        try {
+            // --- CANVA SETUP ---
+            const canvas = document.getElementById('canvas');
+            const wrapper = document.getElementById('viz-wrapper');
+            const ctx = canvas.getContext('2d');
+
+            let width, height;
+
+            // Updated ResizeObserver to watch the WRAPPER, not the window
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    width = entry.contentRect.width;
+                    height = entry.contentRect.height;
+                    canvas.width = width;
+                    canvas.height = height;
+                    updateNodePositions();
+                }
+            });
+            resizeObserver.observe(wrapper);
+
+            // --- NODES ---
+            let NODES = {};
+            function updateNodePositions() {
+                if (!width || !height) return;
+                const cx = width / 2;
+                const cy = height / 2; // Perfectly centered in the TOP SECTION now
+                const r = Math.min(width, height) * 0.40;  /* BIGGER MODEL */
+
+                NODES = {
+                    center: { x: cx, y: cy, label: "AGENT CORE", color: "#ffffff", size: 40 }, /* Bigger Core */
+                    finance: { x: cx, y: cy - r, label: "FINANCE", color: "#00ffa3", size: 20 },
+                    health: { x: cx - r * 0.866, y: cy + r * 0.5, label: "HEALTH", color: "#00a3ff", size: 20 },
+                    dev: { x: cx + r * 0.866, y: cy + r * 0.5, label: "DEVOPS", color: "#ff0055", size: 20 }
+                };
+            }
+
+            // --- ANIMATION ---
+            const PARTICLES = [];
+
+            function draw() {
+                // Clear
+                ctx.fillStyle = "#0a0a1a"; // Matches gradient base
+                ctx.clearRect(0, 0, width, height);
+                // We use CSS background for the gradient, so clearRect makes it visible implies transparent canvas? 
+                // No, ctx is opaque default. Let's paint background.
+                ctx.fillRect(0, 0, width, height);
+
+                if (NODES.center) {
+                    ctx.lineWidth = 2;
+                    ['finance', 'health', 'dev'].forEach(key => {
+                        const n = NODES[key];
+                        // Gradient Line
+                        const grad = ctx.createLinearGradient(n.x, n.y, NODES.center.x, NODES.center.y);
+                        grad.addColorStop(0, n.color);
+                        grad.addColorStop(1, 'rgba(255,255,255,0.05)');
+                        ctx.strokeStyle = grad;
+                        ctx.beginPath();
+                        ctx.moveTo(n.x, n.y);
+                        ctx.lineTo(NODES.center.x, NODES.center.y);
+                        ctx.stroke();
+                    });
+
+                    Object.values(NODES).forEach(n => {
+                        const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.size * 2);
+                        grad.addColorStop(0, n.color);
+                        grad.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, n.size * 2, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, n.size / 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '10px JetBrains Mono';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(n.label, n.x, n.y + n.size + 20);
+                    });
+                }
+
+                for (let i = PARTICLES.length - 1; i >= 0; i--) {
+                    const p = PARTICLES[i];
+                    p.progress += p.speed;
+                    const curX = p.x + (p.targetX - p.x) * p.progress;
+                    const curY = p.y + (p.targetY - p.y) * p.progress;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(curX, curY, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    if (p.progress >= 1) PARTICLES.splice(i, 1);
+                }
+
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+
+            // --- LOGIC ---
+            function spawnParticle(data) {
+                let startNode;
+                if (data.domain === 'finance') startNode = NODES.finance;
+                else if (data.domain === 'healthcare') startNode = NODES.health;
+                else startNode = NODES.dev;
+                if (!startNode) return;
+
+                const isCritical = (data.status === 'CRITICAL' || data.is_manual);
+                PARTICLES.push({
+                    x: startNode.x, y: startNode.y,
+                    targetX: NODES.center.x, targetY: NODES.center.y,
+                    speed: isCritical ? 0.08 : 0.04,
+                    progress: 0,
+                    color: isCritical ? '#ff0055' : startNode.color,
+                    size: isCritical ? 5 : 2
+                });
+            }
+
+            // WebSocket & Trigger
+            const ws = new WebSocket(`ws://${window.location.host}/ws`);
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'data_update') {
+                    const d = msg.data;
+                    const el = document.getElementById('status');
+                    el.innerText = `● RECEIVED: ${d.domain.toUpperCase()}`;
+                    el.style.color = (d.status === 'CRITICAL' || d.is_manual) ? '#ff0055' : '#00ffa3';
+
+                    spawnParticle(d);
+
+                    // Add to Log
+                    const log = document.getElementById('packet-log');
+                    const line = document.createElement('div');
+                    const time = new Date().toISOString().split('T')[1].replace('Z', '');
+                    const color = (d.status === 'CRITICAL' || d.is_manual) ? '#ff0055' : '#00ffa3';
+
+                    line.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${color}">PKG_${d.domain.toUpperCase().substring(0, 3)}</span> :: <span style="opacity:0.7">${JSON.stringify(d).substring(0, 100)}...</span>`;
+
+                    log.insertBefore(line, log.firstChild);
+                    if (log.children.length > 50) log.removeChild(log.lastChild);
+                }
+            };
+
+            let triggerIndex = 0;
+            const DOMAINS = ['finance', 'healthcare', 'dev'];
+
+            window.triggerCrisis = async function () {
+                const btn = document.querySelector('.critical-btn');
+                btn.disabled = true;
+                btn.innerText = "INJECTING...";
+
+                const targetDomain = DOMAINS[triggerIndex % DOMAINS.length];
+                triggerIndex++;
+
+                try {
+                    await fetch('/trigger-event', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ domain: targetDomain })
+                    });
+                } catch (e) { }
+
+                setTimeout(() => {
+                    btn.innerText = "⚠️ TRIGGER CRISIS";
+                    btn.disabled = false;
+                }, 1000);
+            };
+
+        } catch (e) { logError(e.message); }
+    </script>
+</body>
+
+</html>
