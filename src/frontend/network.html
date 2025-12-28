@@ -259,14 +259,27 @@
 
             // --- ANIMATION ---
             const PARTICLES = [];
+            const RIPPLES = []; // New: Impact ripples
 
             function draw() {
-                // Clear
-                ctx.fillStyle = "#0a0a1a"; // Matches gradient base
-                ctx.clearRect(0, 0, width, height);
-                // We use CSS background for the gradient, so clearRect makes it visible implies transparent canvas? 
-                // No, ctx is opaque default. Let's paint background.
+                // TRAIL EFFECT: Instead of clearRect, draw semi-transparent rect
+                ctx.fillStyle = 'rgba(10, 10, 26, 0.2)'; // Dark Fade
                 ctx.fillRect(0, 0, width, height);
+
+                // DRAW RIPLES (Behind everything)
+                for (let i = RIPPLES.length - 1; i >= 0; i--) {
+                    const r = RIPPLES[i];
+                    r.radius += r.speed;
+                    r.opacity -= 0.02;
+
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${r.opacity})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    if (r.opacity <= 0) RIPPLES.splice(i, 1);
+                }
 
                 if (NODES.center) {
                     ctx.lineWidth = 2;
@@ -284,6 +297,10 @@
                     });
 
                     Object.values(NODES).forEach(n => {
+                        // Glow
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = n.color;
+
                         const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.size * 2);
                         grad.addColorStop(0, n.color);
                         grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -292,11 +309,14 @@
                         ctx.arc(n.x, n.y, n.size * 2, 0, Math.PI * 2);
                         ctx.fill();
 
+                        // Core Solid
                         ctx.fillStyle = '#fff';
                         ctx.beginPath();
                         ctx.arc(n.x, n.y, n.size / 2.5, 0, Math.PI * 2);
                         ctx.fill();
 
+                        // Label
+                        ctx.shadowBlur = 0; // Reset for text
                         ctx.fillStyle = '#fff';
                         ctx.font = '10px JetBrains Mono';
                         ctx.textAlign = 'center';
@@ -304,16 +324,32 @@
                     });
                 }
 
+                // DRAW PARTICLES (Blobs)
                 for (let i = PARTICLES.length - 1; i >= 0; i--) {
                     const p = PARTICLES[i];
                     p.progress += p.speed;
+
+                    // Bezier / Curving logic could go here, but Linear is fine for "Beam" look
                     const curX = p.x + (p.targetX - p.x) * p.progress;
                     const curY = p.y + (p.targetY - p.y) * p.progress;
+
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
                     ctx.fillStyle = p.color;
                     ctx.beginPath();
-                    ctx.arc(curX, curY, p.size, 0, Math.PI * 2);
+                    ctx.arc(curX, curY, p.size, 0, Math.PI * 2); // Bigger size
                     ctx.fill();
-                    if (p.progress >= 1) PARTICLES.splice(i, 1);
+
+                    if (p.progress >= 1) {
+                        // Spawn Ripple at Impact
+                        RIPPLES.push({
+                            x: p.targetX, y: p.targetY,
+                            radius: 10,
+                            speed: 1,
+                            opacity: 1
+                        });
+                        PARTICLES.splice(i, 1);
+                    }
                 }
 
                 requestAnimationFrame(draw);
@@ -323,20 +359,30 @@
             // --- LOGIC ---
             function spawnParticle(data) {
                 let startNode;
-                if (data.domain === 'finance') startNode = NODES.finance;
-                else if (data.domain === 'healthcare') startNode = NODES.health;
-                else startNode = NODES.dev;
-                if (!startNode) return;
+                // Robust matching
+                const d = data.domain ? data.domain.toLowerCase() : 'dev';
+
+                if (d.includes('finance')) startNode = NODES.finance;
+                else if (d.includes('health')) startNode = NODES.health;
+                else startNode = NODES.dev; // Default to Dev
+
+                if (!startNode || !NODES.center) return;
 
                 const isCritical = (data.status === 'CRITICAL' || data.is_manual);
-                PARTICLES.push({
-                    x: startNode.x, y: startNode.y,
-                    targetX: NODES.center.x, targetY: NODES.center.y,
-                    speed: isCritical ? 0.08 : 0.04,
-                    progress: 0,
-                    color: isCritical ? '#ff0055' : startNode.color,
-                    size: isCritical ? 5 : 2
-                });
+
+                // Spawn MULTIPLE particles for weight if critical
+                const count = isCritical ? 5 : 1;
+
+                for (let i = 0; i < count; i++) {
+                    PARTICLES.push({
+                        x: startNode.x, y: startNode.y,
+                        targetX: NODES.center.x, targetY: NODES.center.y,
+                        speed: isCritical ? 0.04 : 0.02, // Slower for visibility
+                        progress: isCritical ? (i * -0.05) : 0, // Stagger criticals
+                        color: isCritical ? '#ff0055' : startNode.color,
+                        size: isCritical ? 8 : 4 // Much bigger
+                    });
+                }
             }
 
             // WebSocket & Trigger
