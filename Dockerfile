@@ -7,6 +7,7 @@ WORKDIR /app
 # Install system dependencies (needed for some Python packages)
 RUN apt-get update && apt-get install -y \
     build-essential \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
@@ -17,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
+
+# Fix line endings and permissions for the startup script
+RUN dos2unix start.sh && chmod +x start.sh
 
 # Expose the port (FastAPI)
 EXPOSE 8000
