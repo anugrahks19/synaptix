@@ -342,6 +342,23 @@
             // WebSocket & Trigger
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                const el = document.getElementById('status');
+                el.innerText = "● SYSTEM ONLINE (CONNECTED)";
+                el.style.color = "#00ffa3";
+                // Spawn test particle to verify rendering
+                const testData = { domain: 'finance', status: 'NOMINAL' };
+                spawnParticle(testData);
+            };
+
+            ws.onerror = (e) => {
+                const el = document.getElementById('status');
+                el.innerText = "● CONNECTION FAILED";
+                el.style.color = "red";
+                console.error("WS Error:", e);
+            };
+
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
                 if (msg.type === 'data_update') {
@@ -358,7 +375,7 @@
                     const time = new Date().toISOString().split('T')[1].replace('Z', '');
                     const color = (d.status === 'CRITICAL' || d.is_manual) ? '#ff0055' : '#00ffa3';
 
-                    line.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${color}">PKG_${d.domain.toUpperCase().substring(0, 3)}</span> :: <span style="opacity:0.7">${JSON.stringify(d).substring(0, 100)}...</span>`;
+                    line.innerHTML = `<span style="opacity:0.4">[${time}]</span> <span style="color:${color}">PKG_${d.domain.toUpperCase().substring(0, 3)}</span> :: <span style="opacity:0.7">${JSON.stringify(d).substring(0, 50)}...</span>`;
 
                     log.insertBefore(line, log.firstChild);
                     if (log.children.length > 50) log.removeChild(log.lastChild);
