@@ -6,7 +6,12 @@ __pycache__/
 # Virtual Environment
 venv/
 env/
-.env
+.venv/
+ENV/
+
+# Environment Variables & Secrets
+.env*
+!.env.example
 
 # Distribution
 build/
