@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pathway
+pathway; sys_platform != "win32"
 termcolor
 websockets
 openai

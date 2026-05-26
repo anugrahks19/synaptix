@@ -9,6 +9,10 @@ from datetime import datetime
 
 app = FastAPI()
 
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check():
+    return {"status": "ok"}
+
 # Mount frontend
 app.mount("/static", StaticFiles(directory=os.path.join(os.getcwd(), "src", "frontend")), name="static")
 
@@ -185,14 +189,17 @@ async def trigger_event(req: TriggerRequest):
 @app.post("/stabilize")
 async def stabilize_system():
     # 1. Disable Chaos
-    with open("d:/GITHUB/synaptix/data/sim_config.json", "w") as f:
+    base_dir = os.getcwd()
+    config_path = os.path.join(base_dir, "data", "sim_config.json")
+    with open(config_path, "w") as f:
         json.dump({"mode": "STABLE"}, f)
 
     timestamp = datetime.now().isoformat()
+    data_dir = os.path.join(base_dir, "data", "live_feed")
     files = {
-        "finance": "d:/GITHUB/synaptix/data/live_feed/finance.jsonl",
-        "healthcare": "d:/GITHUB/synaptix/data/live_feed/healthcare.jsonl",
-        "dev": "d:/GITHUB/synaptix/data/live_feed/developer.jsonl"
+        "finance": os.path.join(data_dir, "finance.jsonl"),
+        "healthcare": os.path.join(data_dir, "healthcare.jsonl"),
+        "dev": os.path.join(data_dir, "developer.jsonl")
     }
     
     # Inject Normalcy
@@ -327,4 +334,5 @@ async def startup_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
